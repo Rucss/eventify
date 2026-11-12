@@ -44,8 +44,9 @@ function Profile() {
   const qc = useQueryClient();
   const loadProfile = useServerFn(fetchProfileRequest);
   const updateProfile = useServerFn(saveProfileRequest);
-  const { data } = useQuery({
-    queryKey: ["profile-full", user!.id],
+  const { data, isPending, isError, error, refetch } = useQuery({
+    queryKey: ["profile-full", user?.id],
+    enabled: !!user,
     queryFn: () => loadProfile({ data: {} }),
   });
   const [p, setP] = useState<P | null>(null);
@@ -53,7 +54,20 @@ function Profile() {
   useEffect(() => {
     if (data) setP(data);
   }, [data]);
-  if (!p) return <p className="text-muted-foreground">Loading…</p>;
+  if (isError) {
+    return (
+      <div className="mx-auto max-w-5xl rounded-2xl bg-card p-8 text-center shadow-card">
+        <p className="font-semibold">Could not load your profile.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {error instanceof Error ? error.message : "Please check your connection and try again."}
+        </p>
+        <Button className="mt-4" onClick={() => void refetch()}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+  if (isPending || !p) return <p className="text-muted-foreground">Loading profile…</p>;
   const set = (k: keyof P) => (e: { target: { value: string } }) =>
     setP({ ...p, [k]: e.target.value });
 

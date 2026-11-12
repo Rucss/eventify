@@ -79,15 +79,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Eventify — AI-powered event management" },
+      { title: "Eventify — Event planning" },
       {
         name: "description",
-        content: "Plan, publish and join events with AI-generated themes, venues and budgets.",
+        content: "Plan, publish and join events with tailored themes, venues and budgets.",
       },
-      { property: "og:title", content: "Eventify — AI-powered event management" },
+      { property: "og:title", content: "Eventify — Event planning" },
       {
         property: "og:description",
-        content: "Plan, publish and join events with AI-generated themes, venues and budgets.",
+        content: "Plan, publish and join events with tailored themes, venues and budgets.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -97,7 +97,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
