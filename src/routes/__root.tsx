@@ -82,12 +82,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Eventify — Event planning" },
       {
         name: "description",
-        content: "Plan, publish and join events with tailored themes, venues and budgets.",
+        content: "Discover upcoming events and find ideas for your next gathering.",
       },
       { property: "og:title", content: "Eventify — Event planning" },
       {
         property: "og:description",
-        content: "Plan, publish and join events with tailored themes, venues and budgets.",
+        content: "Discover upcoming events and find ideas for your next gathering.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

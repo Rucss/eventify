@@ -36,10 +36,10 @@ export const getCurrentUser = createServerFn({ method: "GET" }).handler(() => cu
 
 export const signUp = createServerFn({ method: "POST" })
   .inputValidator((data) => signUpSchema.parse(data))
-  .handler(({ data }) => {
+  .handler(async ({ data }) => {
     try {
-      const user = createAccount(data);
-      createSession(user.id);
+      const user = await createAccount(data);
+      await createSession(user.id);
       return { user, error: null };
     } catch (error) {
       if (
@@ -54,16 +54,16 @@ export const signUp = createServerFn({ method: "POST" })
 
 export const signIn = createServerFn({ method: "POST" })
   .inputValidator((data) => signInSchema.parse(data))
-  .handler(({ data }) => {
-    const account = findUserByEmail(data.email);
+  .handler(async ({ data }) => {
+    const account = await findUserByEmail(data.email);
     if (!account || !verifyPassword(data.password, account.password_salt, account.password_hash)) {
       return { user: null, error: "Invalid email or password." };
     }
-    createSession(account.id);
+    await createSession(account.id);
     return { user: { id: account.id, email: account.email }, error: null };
   });
 
-export const signOut = createServerFn({ method: "POST" }).handler(() => {
-  clearSession();
+export const signOut = createServerFn({ method: "POST" }).handler(async () => {
+  await clearSession();
   return { success: true };
 });

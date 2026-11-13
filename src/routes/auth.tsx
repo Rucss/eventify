@@ -23,11 +23,21 @@ export const Route = createFileRoute("/auth")({
       },
     ],
   }),
-  component: AuthPage,
+  component: HiddenAuthRoute,
 });
 
 const inputCls =
   "w-full rounded-lg border border-space-foreground/40 bg-space-foreground/10 px-3 py-3 text-sm text-space-foreground placeholder:text-space-foreground/70 outline-none focus:border-space-foreground";
+
+function HiddenAuthRoute() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    void navigate({ to: "/events", replace: true });
+  }, [navigate]);
+
+  return null;
+}
 
 function AuthPage() {
   const { mode: initial } = Route.useSearch();

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getDatabase, requireCurrentUser } from "./local-db.server";
+import { currentUser, getDatabase, requireCurrentUser } from "./local-db.server";
 import type { EventRow } from "./local-types";
 
 const planSchema = z.object({
@@ -51,7 +51,7 @@ function number(row: Record<string, unknown>, key: string): number {
   return value;
 }
 
-function toEvent(row: Record<string, unknown>, userId: string): EventRow {
+function toEvent(row: Record<string, unknown>, userId: string | null): EventRow {
   const storedPlan = nullableText(row, "ai_plan");
   const parsedPlan = storedPlan === null ? null : planSchema.parse(JSON.parse(storedPlan));
   const creatorName = nullableText(row, "creator_name");
@@ -71,20 +71,20 @@ function toEvent(row: Record<string, unknown>, userId: string): EventRow {
     image_url: nullableText(row, "image_url"),
     ai_plan: parsedPlan,
     creator: creatorName === null ? null : { full_name: creatorName },
-    registrations: number(row, "is_registered") === 1 ? [{ user_id: userId }] : [],
+    registrations: userId && number(row, "is_registered") === 1 ? [{ user_id: userId }] : [],
   };
 }
 
 export const fetchEvents = createServerFn({ method: "GET" })
   .inputValidator((data) => filterSchema.parse(data))
-  .handler(({ data }) => {
-    const user = requireCurrentUser();
-    if (data.registeredBy && data.registeredBy !== user.id) {
+  .handler(async ({ data }) => {
+    const user = await currentUser();
+    if (data.registeredBy && data.registeredBy !== user?.id) {
       throw new Error("You can only view your own registrations.");
     }
 
     const conditions: string[] = [];
-    const parameters: string[] = [user.id];
+    const parameters: (string | number)[] = [user?.id ?? ""];
     if (data.createdBy) {
       conditions.push("e.created_by = ?");
       parameters.push(data.createdBy);
@@ -97,7 +97,7 @@ export const fetchEvents = createServerFn({ method: "GET" })
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-    const rows = getDatabase()
+    const rows = await getDatabase()
       .prepare(
         `SELECT e.*, p.full_name AS creator_name,
                 EXISTS (SELECT 1 FROM registrations r WHERE r.event_id = e.id AND r.user_id = ?) AS is_registered
@@ -107,15 +107,15 @@ export const fetchEvents = createServerFn({ method: "GET" })
          ORDER BY e.event_time ASC`,
       )
       .all(...parameters);
-    return rows.map((row) => toEvent(row, user.id));
+    return rows.map((row) => toEvent(row, user?.id ?? null));
   });
 
 export const createEvent = createServerFn({ method: "POST" })
   .inputValidator((data) => eventSchema.parse(data))
-  .handler(({ data }) => {
-    const user = requireCurrentUser();
+  .handler(async ({ data }) => {
+    const user = await requireCurrentUser();
     const id = randomUUID();
-    getDatabase()
+    await getDatabase()
       .prepare(
         `INSERT INTO events (
           id, created_by, name, description, event_type, budget, attendees, location,
@@ -142,37 +142,34 @@ export const createEvent = createServerFn({ method: "POST" })
 
 export const toggleRegistration = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ eventId: z.string().uuid() }).parse(data))
-  .handler(({ data }) => {
-    const user = requireCurrentUser();
+  .handler(async ({ data }) => {
+    const user = await requireCurrentUser();
     const db = getDatabase();
-    const event = db.prepare("SELECT created_by FROM events WHERE id = ?").get(data.eventId);
+    const event = await db.prepare("SELECT created_by FROM events WHERE id = ?").get(data.eventId);
     if (!event) throw new Error("Event not found.");
     if (event["created_by"] === user.id) throw new Error("You cannot register for your own event.");
 
-    const existing = db
+    const existing = await db
       .prepare("SELECT id FROM registrations WHERE event_id = ? AND user_id = ?")
       .get(data.eventId, user.id);
     if (existing) {
-      db.prepare("DELETE FROM registrations WHERE event_id = ? AND user_id = ?").run(
-        data.eventId,
-        user.id,
-      );
+      await db
+        .prepare("DELETE FROM registrations WHERE event_id = ? AND user_id = ?")
+        .run(data.eventId, user.id);
       return { registered: false };
     }
 
-    db.prepare("INSERT INTO registrations (id, event_id, user_id) VALUES (?, ?, ?)").run(
-      randomUUID(),
-      data.eventId,
-      user.id,
-    );
+    await db
+      .prepare("INSERT INTO registrations (id, event_id, user_id) VALUES (?, ?, ?)")
+      .run(randomUUID(), data.eventId, user.id);
     return { registered: true };
   });
 
 export const deleteEvent = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ eventId: z.string().uuid() }).parse(data))
-  .handler(({ data }) => {
-    const user = requireCurrentUser();
-    const result = getDatabase()
+  .handler(async ({ data }) => {
+    const user = await requireCurrentUser();
+    const result = await getDatabase()
       .prepare("DELETE FROM events WHERE id = ? AND created_by = ?")
       .run(data.eventId, user.id);
     if (result.changes === 0)

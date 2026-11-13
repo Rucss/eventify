@@ -1,6 +1,8 @@
 // @vitest-environment node
 
+import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
+import { createAccount, findUserByEmail, verifyPassword } from "./local-db.server";
 import { generatePlanOptions, validatePlanOptions, type PlanInput } from "./plan.server";
 
 process.env["EVENTIFY_DB_PATH"] = ":memory:";
@@ -59,6 +61,23 @@ describe("generatePlanOptions", () => {
     durationHours: 4,
     catering: true,
   };
+
+  it("creates and looks up an account using the async database client", async () => {
+    const user = await createAccount({
+      email: `turso-adapter-${randomUUID()}@example.com`,
+      password: "a-secure-test-password",
+      fullName: "Database Test",
+      phone: null,
+      address: null,
+    });
+    const stored = await findUserByEmail(user.email);
+
+    expect(stored?.id).toBe(user.id);
+    expect(
+      stored &&
+        verifyPassword("a-secure-test-password", stored.password_salt, stored.password_hash),
+    ).toBe(true);
+  });
 
   it("generates three distinct plans from the local SQLite template catalog", async () => {
     const options = await generatePlanOptions(input);

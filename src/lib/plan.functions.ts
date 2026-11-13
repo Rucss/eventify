@@ -18,7 +18,7 @@ const inputSchema = z.object({
 export const generatePlan = createServerFn({ method: "POST" })
   .inputValidator((d) => inputSchema.parse(d))
   .handler(async ({ data }) => {
-    requireCurrentUser();
+    await requireCurrentUser();
     try {
       const options = await generatePlanOptions(data);
       if (options.length !== 3) {

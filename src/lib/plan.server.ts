@@ -105,7 +105,7 @@ export function validatePlanOptions(value: unknown): PlanOption[] {
 }
 
 export async function generatePlanOptions(input: PlanInput): Promise<PlanOption[]> {
-  const templates = getDatabase()
+  const templates = await getDatabase()
     .prepare(
       `SELECT theme, concept, audience, venue, activities, decoration, budget_splits
        FROM event_plan_templates

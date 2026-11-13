@@ -21,7 +21,13 @@ export function EventsGrid({
 }) {
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
-  const { data = [], isLoading, refetch } = useQuery({
+  const {
+    data = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["events", queryKey, filter],
     queryFn: () => fetchEvents(filter),
   });
@@ -37,15 +43,35 @@ export function EventsGrid({
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search events" className="w-56 pl-9" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search events"
+              className="w-56 pl-9"
+            />
           </div>
           {actions}
         </div>
       </div>
       {isLoading ? (
         <p className="mt-10 text-muted-foreground">Loading events…</p>
+      ) : isError ? (
+        <div className="mt-10 rounded-2xl border border-destructive/30 p-10 text-center">
+          <p className="text-destructive">
+            {error instanceof Error ? error.message : "Could not load events."}
+          </p>
+          <button
+            type="button"
+            className="mt-3 text-sm font-medium text-primary underline"
+            onClick={() => void refetch()}
+          >
+            Try again
+          </button>
+        </div>
       ) : shown.length === 0 ? (
-        <p className="mt-10 rounded-2xl border border-dashed p-10 text-center text-muted-foreground">{empty}</p>
+        <p className="mt-10 rounded-2xl border border-dashed p-10 text-center text-muted-foreground">
+          {empty}
+        </p>
       ) : (
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((e) => (
@@ -53,7 +79,7 @@ export function EventsGrid({
           ))}
         </div>
       )}
-      <EventDetailsDialog event={open} onClose={() => setOpenId(null)} onChanged={() => refetch()} />
+      <EventDetailsDialog event={open} onClose={() => setOpenId(null)} />
     </div>
   );
 }

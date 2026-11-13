@@ -16,18 +16,18 @@ const profileSchema = z.object({
 
 export const fetchProfile = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({}).parse(data))
-  .handler(() => {
-    const user = requireCurrentUser();
-    const profile = getProfile(user.id);
+  .handler(async () => {
+    const user = await requireCurrentUser();
+    const profile = await getProfile(user.id);
     if (!profile) throw new Error("Profile not found.");
     return profile;
   });
 
 export const saveProfile = createServerFn({ method: "POST" })
   .inputValidator((data) => profileSchema.parse(data))
-  .handler(({ data }) => {
-    const user = requireCurrentUser();
-    getDatabase()
+  .handler(async ({ data }) => {
+    const user = await requireCurrentUser();
+    await getDatabase()
       .prepare(
         `UPDATE profiles SET
           full_name = ?, phone = ?, dob = ?, gender = ?, address = ?, bio = ?,
