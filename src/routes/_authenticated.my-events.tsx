@@ -17,10 +17,26 @@ function MyEvents() {
   const { user, loading, error } = useAuth();
   if (import.meta.env.PROD) {
     return (
-      <p className="text-muted-foreground">
-        The live site uses the read-only <code>data/events.json</code> catalog. Update that file
-        and redeploy to change the events list.
-      </p>
+      <div className="mx-auto max-w-6xl">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">My created events</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Events are managed in the read-only JSON catalog. Update the file and redeploy to
+              change this list.
+            </p>
+          </div>
+          <Button asChild>
+            <Link to="/add-event">Add event</Link>
+          </Button>
+        </div>
+        <EventsGrid
+          title=""
+          queryKey="all"
+          filter={{}}
+          empty="No events have been added to data/events.json yet."
+        />
+      </div>
     );
   }
   if (loading) return <p className="text-muted-foreground">Preparing your guest profile…</p>;

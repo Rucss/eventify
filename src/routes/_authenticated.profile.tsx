@@ -56,12 +56,21 @@ function Profile() {
   }, [data]);
   if (import.meta.env.PROD) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border bg-card p-8 text-center">
-        <h1 className="text-2xl font-bold">Profiles are not enabled on the live catalog</h1>
-        <p className="mt-3 text-muted-foreground">
-          The live site reads its event list from <code>data/events.json</code> and does not save
-          visitor profile changes.
-        </p>
+      <div className="mx-auto max-w-none space-y-6 bg-card p-4 sm:p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-28 w-28 items-center justify-center rounded-full bg-muted">
+            <UserRound className="h-14 w-14 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold">Profile</h1>
+        </div>
+        <div className="rounded-xl border bg-muted/40 p-5">
+          <h2 className="font-semibold">Read-only public catalog</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Visitor profiles and profile edits are not saved on the live site. To update the
+            published event information, edit <code>data/events.json</code> in your project and
+            redeploy.
+          </p>
+        </div>
       </div>
     );
   }

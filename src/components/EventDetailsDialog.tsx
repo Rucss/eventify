@@ -118,8 +118,14 @@ export function EventDetailsDialog({
             <p className="font-semibold">Description</p>
             <p className="mt-1 text-sm text-muted-foreground">{event.description || "—"}</p>
           </div>
+          {import.meta.env.PROD && (
+            <p className="text-sm text-muted-foreground">
+              This is a read-only event from the JSON catalog. Registrations and edits are not
+              saved on the live site.
+            </p>
+          )}
           <div className="flex flex-wrap justify-end gap-2">
-            {isOwner && (
+            {!import.meta.env.PROD && isOwner && (
               <Button variant="destructive" onClick={remove}>
                 Delete event
               </Button>
@@ -127,7 +133,7 @@ export function EventDetailsDialog({
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
-            {!isOwner && user && (
+            {!import.meta.env.PROD && !isOwner && user && (
               <Button onClick={toggleRegister} disabled={busy}>
                 {registered ? "Cancel registration" : "Register"}
               </Button>

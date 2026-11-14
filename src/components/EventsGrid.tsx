@@ -54,9 +54,25 @@ export function EventsGrid({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold">{title}</h1>
-        <div className="flex items-center gap-3">
+      {title && (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-3xl font-bold">{title}</h1>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search events"
+                className="w-56 pl-9"
+              />
+            </div>
+            {actions}
+          </div>
+        </div>
+      )}
+      {!title && (
+        <div className="mb-2 flex justify-end">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -66,9 +82,8 @@ export function EventsGrid({
               className="w-56 pl-9"
             />
           </div>
-          {actions}
         </div>
-      </div>
+      )}
       {isLoading ? (
         <p className="mt-10 text-muted-foreground">Loading events…</p>
       ) : isError ? (

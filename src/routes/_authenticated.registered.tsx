@@ -16,10 +16,19 @@ function Registered() {
   const { user, loading, error } = useAuth();
   if (import.meta.env.PROD) {
     return (
-      <p className="text-muted-foreground">
-        Event registrations are not saved on the live JSON catalog. Events can be listed in{" "}
-        <code>data/events.json</code>.
-      </p>
+      <div className="mx-auto max-w-6xl">
+        <h1 className="text-3xl font-bold">My registered events</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          This list shows events with registrations recorded in <code>data/events.json</code>.
+          Registrations are not tied to individual visitors or saved on the live site.
+        </p>
+        <EventsGrid
+          title=""
+          queryKey="registered"
+          filter={{ hasRegistrations: true }}
+          empty="No registrations have been recorded in data/events.json."
+        />
+      </div>
     );
   }
   if (loading) return <p className="text-muted-foreground">Preparing your guest profile…</p>;

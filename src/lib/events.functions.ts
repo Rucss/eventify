@@ -31,6 +31,7 @@ const eventSchema = z.object({
 const filterSchema = z.object({
   createdBy: z.string().uuid().optional(),
   registeredBy: z.string().uuid().optional(),
+  hasRegistrations: z.boolean().optional(),
 });
 
 const catalogEventSchema = eventSchema.extend({
@@ -100,6 +101,7 @@ export const fetchEvents = createServerFn({ method: "GET" })
             !data.registeredBy ||
             event.registrations.some((registration) => registration.user_id === data.registeredBy),
         )
+        .filter((event) => !data.hasRegistrations || event.registrations.length > 0)
         .sort(
           (first, second) =>
             new Date(first.event_time).getTime() - new Date(second.event_time).getTime(),
@@ -122,6 +124,9 @@ export const fetchEvents = createServerFn({ method: "GET" })
         "EXISTS (SELECT 1 FROM registrations r WHERE r.event_id = e.id AND r.user_id = ?)",
       );
       parameters.push(data.registeredBy);
+    }
+    if (data.hasRegistrations) {
+      conditions.push("EXISTS (SELECT 1 FROM registrations r WHERE r.event_id = e.id)");
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
