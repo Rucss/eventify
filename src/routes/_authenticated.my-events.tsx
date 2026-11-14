@@ -22,8 +22,8 @@ function MyEvents() {
           <div>
             <h1 className="text-3xl font-bold">My created events</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Events are managed in the read-only JSON catalog. Update the file and redeploy to
-              change this list.
+              Only events created in this browser are shown here. Keep this browser’s site data to
+              retain access.
             </p>
           </div>
           <Button asChild>
@@ -34,7 +34,7 @@ function MyEvents() {
           title=""
           queryKey="all"
           filter={{}}
-          empty="No events have been added to data/events.json yet."
+          empty="No events have been created yet."
         />
       </div>
     );

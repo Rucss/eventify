@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/events")({
       filter={{}}
       empty={
         import.meta.env.PROD
-          ? "No events have been added to data/events.json yet."
+          ? "No events have been created in this browser yet."
           : "No events have been published yet."
       }
     />

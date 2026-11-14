@@ -2,7 +2,12 @@ import { fetchEvents as fetchEventsRequest } from "./events.functions";
 export type { EventRow, PlanOption } from "./local-types";
 
 export async function fetchEvents(
-  filter: { createdBy?: string; registeredBy?: string; hasRegistrations?: boolean } = {},
+  filter: {
+    createdBy?: string;
+    registeredBy?: string;
+    hasRegistrations?: boolean;
+    ownerKey?: string;
+  } = {},
 ) {
   return fetchEventsRequest({ data: filter });
 }

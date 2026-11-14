@@ -64,11 +64,10 @@ function Profile() {
           <h1 className="text-2xl font-bold">Profile</h1>
         </div>
         <div className="rounded-xl border bg-muted/40 p-5">
-          <h2 className="font-semibold">Read-only public catalog</h2>
+          <h2 className="font-semibold">Local profile unavailable</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Visitor profiles and profile edits are not saved on the live site. To update the
-            published event information, edit <code>data/events.json</code> in your project and
-            redeploy.
+            Visitor profiles are not saved on the live site. Events submitted from this browser
+            remain private to this browser.
           </p>
         </div>
       </div>

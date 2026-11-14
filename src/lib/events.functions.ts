@@ -1,4 +1,10 @@
 import { randomUUID } from "node:crypto";
+import {
+  BlobError,
+  BlobPreconditionFailedError,
+  get as getBlob,
+  put as putBlob,
+} from "@vercel/blob";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import catalog from "../../data/events.json";
@@ -28,10 +34,15 @@ const eventSchema = z.object({
   ai_plan: planSchema.nullable(),
 });
 
+const createEventSchema = eventSchema.extend({
+  ownerKey: z.string().uuid().optional(),
+});
+
 const filterSchema = z.object({
   createdBy: z.string().uuid().optional(),
   registeredBy: z.string().uuid().optional(),
   hasRegistrations: z.boolean().optional(),
+  ownerKey: z.string().uuid().optional(),
 });
 
 const catalogEventSchema = eventSchema.extend({
@@ -41,8 +52,74 @@ const catalogEventSchema = eventSchema.extend({
   registrations: z.array(z.object({ user_id: z.string().uuid() })),
 });
 
-function isStaticCatalogMode() {
+const BLOB_CATALOG_PATH = "eventify/events.json";
+const MAX_CATALOG_EVENTS = 500;
+
+function isLiveMode() {
   return process.env["NODE_ENV"] === "production" || !!process.env["VERCEL"];
+}
+
+function parseCatalog(value: unknown): EventRow[] {
+  return z.array(catalogEventSchema).parse(value);
+}
+
+async function readLiveCatalog(): Promise<EventRow[]> {
+  const blob = await getBlob(BLOB_CATALOG_PATH, { access: "private", useCache: false });
+  if (!blob) return parseCatalog(catalog);
+  return parseBlobCatalog(blob);
+}
+
+async function parseBlobCatalog(
+  blob: NonNullable<Awaited<ReturnType<typeof getBlob>>>,
+): Promise<EventRow[]> {
+  if (blob.statusCode !== 200 || !blob.stream) {
+    throw new Error("The shared event catalog could not be read.");
+  }
+  return parseCatalog(await new Response(blob.stream).json());
+}
+
+async function writeLiveEvent(
+  data: z.infer<typeof eventSchema>,
+  ownerKey: string,
+): Promise<string> {
+  const id = randomUUID();
+  const event: EventRow = {
+    ...data,
+    id,
+    created_by: ownerKey,
+    creator: null,
+    registrations: [],
+  };
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const blob = await getBlob(BLOB_CATALOG_PATH, { access: "private", useCache: false });
+    const currentEvents = blob ? await parseBlobCatalog(blob) : parseCatalog(catalog);
+    if (currentEvents.length >= MAX_CATALOG_EVENTS) {
+      throw new Error(`The event catalog is full (maximum ${MAX_CATALOG_EVENTS} events).`);
+    }
+
+    try {
+      await putBlob(BLOB_CATALOG_PATH, JSON.stringify([...currentEvents, event]), {
+        access: "private",
+        addRandomSuffix: false,
+        contentType: "application/json",
+        ...(blob ? { ifMatch: blob.blob.etag } : {}),
+      });
+      return id;
+    } catch (error) {
+      if (error instanceof BlobPreconditionFailedError) continue;
+      if (!blob && error instanceof BlobError) {
+        const createdByAnotherRequest = await getBlob(BLOB_CATALOG_PATH, {
+          access: "private",
+          useCache: false,
+        });
+        if (createdByAnotherRequest) continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error("The event catalog changed during your save. Please try again.");
 }
 
 function text(row: Record<string, unknown>, key: string): string {
@@ -91,10 +168,10 @@ function toEvent(row: Record<string, unknown>, userId: string | null): EventRow 
 export const fetchEvents = createServerFn({ method: "GET" })
   .inputValidator((data) => filterSchema.parse(data))
   .handler(async ({ data }) => {
-    if (isStaticCatalogMode()) {
-      return z
-        .array(catalogEventSchema)
-        .parse(catalog)
+    if (isLiveMode()) {
+      if (!data.ownerKey) return [];
+      return (await readLiveCatalog())
+        .filter((event) => event.created_by === data.ownerKey)
         .filter((event) => !data.createdBy || event.created_by === data.createdBy)
         .filter(
           (event) =>
@@ -144,10 +221,12 @@ export const fetchEvents = createServerFn({ method: "GET" })
   });
 
 export const createEvent = createServerFn({ method: "POST" })
-  .inputValidator((data) => eventSchema.parse(data))
+  .inputValidator((data) => createEventSchema.parse(data))
   .handler(async ({ data }) => {
-    if (isStaticCatalogMode()) {
-      throw new Error("Live event data is read-only. Edit data/events.json and redeploy.");
+    if (isLiveMode()) {
+      if (!data.ownerKey) throw new Error("Your browser event key is missing. Refresh and try again.");
+      const { ownerKey, ...eventData } = data;
+      return { id: await writeLiveEvent(eventData, ownerKey) };
     }
     const user = await requireCurrentUser();
     const id = randomUUID();
@@ -179,8 +258,8 @@ export const createEvent = createServerFn({ method: "POST" })
 export const toggleRegistration = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ eventId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
-    if (isStaticCatalogMode()) {
-      throw new Error("Live event registrations are read-only in the JSON catalog.");
+    if (isLiveMode()) {
+      throw new Error("Event registrations are disabled on the live site.");
     }
     const user = await requireCurrentUser();
     const db = getDatabase();
@@ -207,8 +286,8 @@ export const toggleRegistration = createServerFn({ method: "POST" })
 export const deleteEvent = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ eventId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
-    if (isStaticCatalogMode()) {
-      throw new Error("Live event data is read-only. Edit data/events.json and redeploy.");
+    if (isLiveMode()) {
+      throw new Error("Event deletion is disabled on the live site.");
     }
     const user = await requireCurrentUser();
     const result = await getDatabase()

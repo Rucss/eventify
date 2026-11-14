@@ -1,12 +1,14 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { generatePlan } from "@/lib/plan.functions";
 import { createEvent as createEventRequest } from "@/lib/events.functions";
 import { fileToResizedDataUrl } from "@/lib/image";
 import { useAuth } from "@/lib/auth";
+import { getOrCreateEventOwnerKey } from "@/lib/event-owner";
 import type { PlanOption } from "@/lib/events";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/add-event")({
 function AddEvent() {
   const { user, loading: authLoading, error: authError } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const gen = useServerFn(generatePlan);
   const saveEvent = useServerFn(createEventRequest);
   const [f, setF] = useState({
@@ -48,22 +51,8 @@ function AddEvent() {
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) =>
     setF({ ...f, [k]: e.target.value });
 
-  if (import.meta.env.PROD) {
-    return (
-      <div className="mx-auto max-w-2xl rounded-2xl border bg-card p-8 text-center">
-        <h1 className="text-2xl font-bold">Events are managed in a file</h1>
-        <p className="mt-3 text-muted-foreground">
-          Add or update events in <code>data/events.json</code>, then deploy the updated project.
-          Event creation and plan generation are disabled on the live site.
-        </p>
-        <Button asChild className="mt-6">
-          <Link to="/events">Browse events</Link>
-        </Button>
-      </div>
-    );
-  }
-
   async function onGenerate() {
+    if (import.meta.env.PROD) return;
     const attendees = Number(f.attendees);
     if (
       !f.name.trim() ||
@@ -109,7 +98,7 @@ function AddEvent() {
   }
 
   async function onSave() {
-    if (!user) return;
+    if (!import.meta.env.PROD && !user) return;
     if (!f.name || !f.eventTime) return void toast.error("Event name and time are required.");
     setSaving(true);
     try {
@@ -126,9 +115,11 @@ function AddEvent() {
           catering: f.catering,
           image_url: image,
           ai_plan: selected !== null ? options[selected] : null,
+          ...(import.meta.env.PROD ? { ownerKey: getOrCreateEventOwnerKey() } : {}),
         },
       });
       toast.success("Event saved!");
+      await queryClient.invalidateQueries({ queryKey: ["events"] });
       await navigate({ to: "/my-events" });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save event.");
@@ -149,12 +140,22 @@ function AddEvent() {
           >
             Close
           </Button>
-          <Button variant="secondary" onClick={onSave} disabled={!user || saving || loading}>
+          <Button
+            variant="secondary"
+            onClick={onSave}
+            disabled={(!import.meta.env.PROD && !user) || saving || loading}
+          >
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>
       </div>
       <div className="space-y-5 p-6">
+        {import.meta.env.PROD && (
+          <p className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
+            This event is private to this browser. Keep this browser’s site data to retain access;
+            clearing it will remove your access to the event.
+          </p>
+        )}
         <label className="flex h-52 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed bg-muted/40">
           {image ? (
             <img src={image} alt="Event poster" className="h-full object-contain p-2" />
@@ -217,24 +218,34 @@ function AddEvent() {
             />{" "}
             Catering required
           </label>
-          <Button
-            size="lg"
-            onClick={onGenerate}
-            disabled={!user || loading || saving}
-            className="min-w-64"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-            {loading ? "Generating options…" : options.length ? "Re-generate" : "Generate options"}
-          </Button>
+          {import.meta.env.PROD ? (
+            <p className="text-sm text-muted-foreground">
+              AI plan generation is available during local development only.
+            </p>
+          ) : (
+            <Button
+              size="lg"
+              onClick={onGenerate}
+              disabled={!user || loading || saving}
+              className="min-w-64"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {loading
+                ? "Generating options…"
+                : options.length
+                  ? "Re-generate"
+                  : "Generate options"}
+            </Button>
+          )}
         </div>
-        {authLoading && (
+        {!import.meta.env.PROD && authLoading && (
           <p className="text-center text-sm text-muted-foreground">Preparing your guest profile…</p>
         )}
-        {!authLoading && !user && (
+        {!import.meta.env.PROD && !authLoading && !user && (
           <p className="text-center text-sm text-destructive">
             {authError || "Your guest profile could not be loaded. Refresh and try again."}
           </p>

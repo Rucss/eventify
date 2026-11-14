@@ -35,7 +35,9 @@ export function EventCard({ event, onView }: { event: EventRow; onView: () => vo
           </span>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
-          Registered users: {event.registrations.length}
+          {import.meta.env.PROD
+            ? `Capacity: ${event.attendees}`
+            : `Registered users: ${event.registrations.length}`}
         </p>
         <Button className="mt-4 w-full" onClick={onView}>
           View details

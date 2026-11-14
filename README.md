@@ -18,35 +18,19 @@ During local development, the app creates `data/eventify.sqlite` on first use. S
 
 The sign-in and registration pages are hidden. In development, Eventify creates a guest profile for that browser automatically, so you can test profiles, event creation, plan generation, and registrations without an account.
 
-## Manage live events with JSON
+## Live event storage
 
-The live site uses [`data/events.json`](./data/events.json) as a read-only event catalog. Edit this file, commit and push the change, then let Vercel redeploy. No Turso account or database environment variables are needed for live event listings.
+Local development uses SQLite. The live app stores its event catalog as JSON in a **private Vercel Blob store**; it does not use Turso or write into Vercel's temporary project filesystem. Visitors can submit events from **Add Event**. Each browser only sees events submitted from that browser.
 
-Add event objects inside the array. Each event uses this shape:
+To enable live event storage:
 
-```json
-{
-  "id": "a unique UUID",
-  "created_by": "a unique UUID",
-  "name": "Community Festival",
-  "description": "An evening of music and food.",
-  "event_type": "Festival",
-  "budget": "50000",
-  "attendees": 300,
-  "location": "City Park",
-  "event_time": "2027-06-15T18:00:00.000Z",
-  "duration_hours": 4,
-  "catering": true,
-  "image_url": "/events/community-festival.jpg",
-  "ai_plan": null,
-  "creator": { "full_name": "Event Team" },
-  "registrations": []
-}
-```
+1. In the Vercel project, open **Storage → Create Storage → Blob** and create a **private** store.
+2. Connect the store to this project for the Production environment (and Preview if you use preview deployments). Vercel's Blob SDK uses the connected project's credentials. If connecting a store outside Vercel, configure `BLOB_READ_WRITE_TOKEN` as a server-only environment variable.
+3. Redeploy the project.
 
-Use valid UUIDs for `id`, `created_by`, and each registration's `user_id`. `event_time` must be an ISO date/time. Put image files in `public/` and use their public URL path in `image_url`. Separate multiple event objects with commas, and keep the JSON valid.
+The app starts with [`data/events.json`](./data/events.json). When the first live event is submitted, the app copies that seed file into the Blob catalog and adds the new event. Seeded or previously anonymous events do not have a browser owner key, so they are not shown to visitors in private live mode. After the first write, editing the repository's JSON file will not overwrite the live catalog.
 
-The live catalog is read-only: visitors can browse event details, but live event creation, registrations, profiles, and plan generation are not saved. Those workflows remain available for local development. Vercel's deployment filesystem is temporary, so changes made by a visitor cannot be kept as a project file.
+Live event submissions do not require an account. Event ownership is tied to a random key in that browser's local storage: events are only returned to requests with the matching key. This is browser-specific rather than account-based, so clearing site data loses access and events cannot be recovered or moved to another browser. Input is validated and the catalog is capped at 500 events. Live registrations, profile editing, and AI plan generation are not enabled. These features remain available against local SQLite during development.
 
 ## Event-plan generator
 
@@ -57,4 +41,5 @@ During local development, generated plans are selected from the seeded `event_pl
 ```sh
 npm test
 npm run build
+npx tsc --noEmit
 ```

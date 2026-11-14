@@ -19,15 +19,8 @@ function Registered() {
       <div className="mx-auto max-w-6xl">
         <h1 className="text-3xl font-bold">My registered events</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          This list shows events with registrations recorded in <code>data/events.json</code>.
-          Registrations are not tied to individual visitors or saved on the live site.
+          Registration is disabled on the live site, so there are no registered events to show.
         </p>
-        <EventsGrid
-          title=""
-          queryKey="registered"
-          filter={{ hasRegistrations: true }}
-          empty="No registrations have been recorded in data/events.json."
-        />
       </div>
     );
   }

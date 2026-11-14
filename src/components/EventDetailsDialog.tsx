@@ -120,8 +120,7 @@ export function EventDetailsDialog({
           </div>
           {import.meta.env.PROD && (
             <p className="text-sm text-muted-foreground">
-              This is a read-only event from the JSON catalog. Registrations and edits are not
-              saved on the live site.
+              This event is private to this browser. Registrations are disabled on the live site.
             </p>
           )}
           <div className="flex flex-wrap justify-end gap-2">
