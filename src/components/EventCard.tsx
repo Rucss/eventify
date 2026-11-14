@@ -5,7 +5,7 @@ import { formatDate, type EventRow } from "@/lib/events";
 export function EventCard({ event, onView }: { event: EventRow; onView: () => void }) {
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-card transition-transform hover:-translate-y-1">
-      <div className="relative h-48 bg-space">
+      <div className="relative h-40 bg-space">
         {event.image_url ? (
           <img src={event.image_url} alt={event.name} className="h-full w-full object-cover" />
         ) : (
@@ -35,8 +35,7 @@ export function EventCard({ event, onView }: { event: EventRow; onView: () => vo
           </span>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
-          Capacity: {event.attendees}
-          {event.location ? ` · ${event.location}` : ""}
+          Registered users: {event.registrations.length}
         </p>
         <Button className="mt-4 w-full" onClick={onView}>
           View details

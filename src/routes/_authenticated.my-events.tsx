@@ -4,17 +4,26 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/my-events")({
-  head: () => ({ meta: [{ title: "My created events — Eventify" }, { name: "description", content: "Events you've created." }] }),
+  head: () => ({
+    meta: [
+      { title: "My created events — Eventify" },
+      { name: "description", content: "Events you've created." },
+    ],
+  }),
   component: MyEvents,
 });
 
 function MyEvents() {
-  const { user } = useAuth();
+  const { user, loading, error } = useAuth();
+  if (loading) return <p className="text-muted-foreground">Preparing your guest profile…</p>;
+  if (!user) {
+    return <p className="text-destructive">{error || "Your guest profile could not be loaded."}</p>;
+  }
   return (
     <EventsGrid
       title="My created events"
       queryKey="mine"
-      filter={{ createdBy: user!.id }}
+      filter={{ createdBy: user.id }}
       empty="You haven't created any events yet."
       actions={
         <Button asChild>

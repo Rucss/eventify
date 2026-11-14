@@ -519,6 +519,22 @@ export async function createSession(userId: string): Promise<void> {
   });
 }
 
+export async function ensureGuestSession(): Promise<User> {
+  const existingUser = await currentUser();
+  if (existingUser) return existingUser;
+
+  const guestId = randomUUID();
+  const guestUser = await createAccount({
+    email: `guest-${guestId}@guest.eventify.local`,
+    password: randomBytes(32).toString("base64url"),
+    fullName: "Guest",
+    phone: null,
+    address: null,
+  });
+  await createSession(guestUser.id);
+  return guestUser;
+}
+
 export async function clearSession(): Promise<void> {
   const token = getCookie(SESSION_COOKIE);
   if (token)

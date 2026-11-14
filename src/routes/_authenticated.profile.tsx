@@ -40,7 +40,7 @@ type P = {
 };
 
 function Profile() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
   const qc = useQueryClient();
   const loadProfile = useServerFn(fetchProfileRequest);
   const updateProfile = useServerFn(saveProfileRequest);
@@ -54,6 +54,17 @@ function Profile() {
   useEffect(() => {
     if (data) setP(data);
   }, [data]);
+  if (authLoading) return <p className="text-muted-foreground">Preparing your guest profile…</p>;
+  if (!user) {
+    return (
+      <div className="mx-auto max-w-5xl rounded-2xl bg-card p-8 text-center shadow-card">
+        <h1 className="text-2xl font-bold">Profile</h1>
+        <p className="mt-3 text-muted-foreground">
+          {authError || "Your guest profile could not be loaded. Please refresh and try again."}
+        </p>
+      </div>
+    );
+  }
   if (isError) {
     return (
       <div className="mx-auto max-w-5xl rounded-2xl bg-card p-8 text-center shadow-card">
@@ -98,7 +109,7 @@ function Profile() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 rounded-2xl bg-card p-8 shadow-card">
+    <div className="mx-auto max-w-none space-y-6 bg-card p-4 sm:p-8">
       <div className="flex flex-col items-center gap-3">
         <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-muted">
           {p.avatar_url ? (
@@ -128,10 +139,12 @@ function Profile() {
           <Label>Name</Label>
           <Input value={p.full_name} onChange={set("full_name")} />
         </div>
-        <div>
-          <Label>Email</Label>
-          <Input value={p.email} disabled />
-        </div>
+        {user && !user.email.endsWith("@guest.eventify.local") && (
+          <div>
+            <Label>Email</Label>
+            <Input value={p.email} disabled />
+          </div>
+        )}
         <div>
           <Label>Phone</Label>
           <Input value={p.phone ?? ""} onChange={set("phone")} />
@@ -182,6 +195,12 @@ function Profile() {
       <Button onClick={save} disabled={saving}>
         {saving ? "Saving…" : "Save changes"}
       </Button>
+      {user?.email.endsWith("@guest.eventify.local") && (
+        <p className="text-xs text-muted-foreground">
+          This profile is saved for this browser. Clearing site data or using another browser
+          creates a separate guest profile.
+        </p>
+      )}
     </div>
   );
 }

@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/add-event")({
 });
 
 function AddEvent() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
   const navigate = useNavigate();
   const gen = useServerFn(generatePlan);
   const saveEvent = useServerFn(createEventRequest);
@@ -123,7 +123,7 @@ function AddEvent() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl overflow-hidden rounded-2xl bg-card shadow-card">
+    <div className="mx-auto max-w-none overflow-hidden bg-card">
       <div className="flex items-center justify-between bg-primary px-6 py-4 text-primary-foreground">
         <h1 className="text-xl font-bold">Add event</h1>
         <div className="flex gap-2">
@@ -134,7 +134,7 @@ function AddEvent() {
           >
             Close
           </Button>
-          <Button variant="secondary" onClick={onSave} disabled={saving || loading}>
+          <Button variant="secondary" onClick={onSave} disabled={!user || saving || loading}>
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>
@@ -202,7 +202,12 @@ function AddEvent() {
             />{" "}
             Catering required
           </label>
-          <Button size="lg" onClick={onGenerate} disabled={loading || saving} className="min-w-64">
+          <Button
+            size="lg"
+            onClick={onGenerate}
+            disabled={!user || loading || saving}
+            className="min-w-64"
+          >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -211,6 +216,14 @@ function AddEvent() {
             {loading ? "Generating options…" : options.length ? "Re-generate" : "Generate options"}
           </Button>
         </div>
+        {authLoading && (
+          <p className="text-center text-sm text-muted-foreground">Preparing your guest profile…</p>
+        )}
+        {!authLoading && !user && (
+          <p className="text-center text-sm text-destructive">
+            {authError || "Your guest profile could not be loaded. Refresh and try again."}
+          </p>
+        )}
         {options.length > 0 && (
           <fieldset className="min-w-0">
             <legend className="mb-4 text-xl font-semibold">Choose an event plan</legend>

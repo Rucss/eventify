@@ -4,7 +4,7 @@ import {
   clearSession,
   createAccount,
   createSession,
-  currentUser,
+  ensureGuestSession,
   findUserByEmail,
   verifyPassword,
 } from "./local-db.server";
@@ -32,7 +32,7 @@ const signInSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
-export const getCurrentUser = createServerFn({ method: "GET" }).handler(() => currentUser());
+export const getCurrentUser = createServerFn({ method: "GET" }).handler(() => ensureGuestSession());
 
 export const signUp = createServerFn({ method: "POST" })
   .inputValidator((data) => signUpSchema.parse(data))

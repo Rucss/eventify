@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   CalendarClock,
   MapPin,
@@ -9,9 +10,16 @@ import {
   Tag,
   Utensils,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import {
+  deleteEvent as deleteEventRequest,
+  toggleRegistration as toggleRegistrationRequest,
+} from "@/lib/events.functions";
 import { formatDateTime, type EventRow } from "@/lib/events";
+import { useAuth } from "@/lib/auth";
 
 function Field({ icon: Icon, label, value }: { icon: typeof Tag; label: string; value: string }) {
   return (
@@ -27,12 +35,47 @@ function Field({ icon: Icon, label, value }: { icon: typeof Tag; label: string; 
 export function EventDetailsDialog({
   event,
   onClose,
+  onChanged,
 }: {
   event: EventRow | null;
   onClose: () => void;
+  onChanged: () => void;
 }) {
+  const { user } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const toggleRegistrationRequestFn = useServerFn(toggleRegistrationRequest);
+  const deleteEventRequestFn = useServerFn(deleteEventRequest);
   if (!event) return null;
   const plan = event.ai_plan;
+  const isOwner = user?.id === event.created_by;
+  const registered =
+    !!user && event.registrations.some((registration) => registration.user_id === user.id);
+
+  async function toggleRegister() {
+    if (!user || !event) return;
+    setBusy(true);
+    try {
+      const result = await toggleRegistrationRequestFn({ data: { eventId: event.id } });
+      toast.success(result.registered ? "You're registered!" : "Registration cancelled");
+      onChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update registration.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!event || !confirm("Delete this event?")) return;
+    try {
+      await deleteEventRequestFn({ data: { eventId: event.id } });
+      toast.success("Event deleted");
+      onClose();
+      onChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete event.");
+    }
+  }
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -76,9 +119,19 @@ export function EventDetailsDialog({
             <p className="mt-1 text-sm text-muted-foreground">{event.description || "—"}</p>
           </div>
           <div className="flex flex-wrap justify-end gap-2">
+            {isOwner && (
+              <Button variant="destructive" onClick={remove}>
+                Delete event
+              </Button>
+            )}
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
+            {!isOwner && user && (
+              <Button onClick={toggleRegister} disabled={busy}>
+                {registered ? "Cancel registration" : "Register"}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

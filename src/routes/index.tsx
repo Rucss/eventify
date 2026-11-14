@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Brain, CalendarHeart, Sparkles, Users } from "lucide-react";
+import { Brain, Sparkles, Users } from "lucide-react";
 import { Starfield } from "@/components/Starfield";
 import { Button } from "@/components/ui/button";
 
@@ -23,18 +23,29 @@ export const Route = createFileRoute("/")({
 const features = [
   {
     icon: Brain,
-    title: "Event inspiration",
-    text: "Explore a variety of plans for celebrations, festivals, and gatherings.",
+    title: "AI-Powered Planning",
+    text: "Create thoughtful event plans with ideas tailored to your needs.",
   },
   {
     icon: Sparkles,
-    title: "Plans for every occasion",
-    text: "Find themes, activities, venue ideas, and budget breakdowns.",
+    title: "Easy Event Collaboration",
+    text: "Keep event details and plans organized in one convenient place.",
   },
   {
     icon: Users,
-    title: "Discover events",
-    text: "Browse upcoming events and open one to see its details.",
+    title: "Smart Recommendations",
+    text: "Explore themes, activities, venues, and budgets for your next event.",
+  },
+];
+
+const testimonials = [
+  {
+    name: "Event organizer",
+    text: "Eventify made planning our event simple. Everything we needed was easy to find.",
+  },
+  {
+    name: "Community host",
+    text: "The event ideas helped us get started and bring our plans together.",
   },
 ];
 
@@ -43,31 +54,38 @@ function Landing() {
     <main className="relative min-h-screen overflow-hidden bg-space text-space-foreground">
       <Starfield count={110} tone="white" />
       <section className="relative flex min-h-[78vh] flex-col items-center justify-center px-6 text-center">
-        <span className="glass mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-medium">
-          <Sparkles className="h-3 w-3" /> Event ideas and local plans
-        </span>
-        <h1 className="glow-text text-5xl font-bold sm:text-7xl">
+        <h1 className="glow-text text-4xl font-bold sm:text-6xl">
           Welcome to <span className="text-glow">Eventify</span>
         </h1>
-        <p className="mt-4 text-lg opacity-80 sm:text-xl">
-          Discover events and ideas for your next gathering
+        <p className="mt-3 text-base opacity-80 sm:text-lg">
+          Your Ultimate Event Management Platform
         </p>
-        <div className="mt-8 flex gap-3">
-          <Button asChild size="lg">
-            <Link to="/events">
-              <CalendarHeart className="mr-2 h-4 w-4" /> Get started
-            </Link>
-          </Button>
+        <Button asChild className="mt-6" size="lg">
+          <Link to="/events">Get Started</Link>
+        </Button>
+      </section>
+      <section className="relative mx-auto max-w-5xl px-6 pb-14 text-center">
+        <h2 className="text-2xl font-bold sm:text-3xl">Features That Make Us Stand Out</h2>
+        <div className="mt-7 grid gap-4 sm:grid-cols-3">
+          {features.map((feature) => (
+            <article key={feature.title} className="glass rounded-2xl p-6">
+              <feature.icon className="mx-auto h-6 w-6 text-glow" />
+              <h3 className="mt-3 font-semibold">{feature.title}</h3>
+              <p className="mt-2 text-sm opacity-75">{feature.text}</p>
+            </article>
+          ))}
         </div>
       </section>
-      <section className="relative mx-auto grid max-w-5xl gap-4 px-6 pb-20 sm:grid-cols-3">
-        {features.map((f) => (
-          <div key={f.title} className="glass rounded-2xl p-6">
-            <f.icon className="h-6 w-6 text-glow" />
-            <h3 className="mt-3 font-semibold">{f.title}</h3>
-            <p className="mt-1 text-sm opacity-75">{f.text}</p>
-          </div>
-        ))}
+      <section className="relative mx-auto max-w-5xl px-6 pb-20 text-center">
+        <h2 className="text-2xl font-bold sm:text-3xl">What Our Users Say</h2>
+        <div className="mt-7 grid gap-4 sm:grid-cols-2">
+          {testimonials.map((testimonial) => (
+            <figure key={testimonial.name} className="glass rounded-2xl p-6 text-left">
+              <blockquote className="text-sm opacity-85">“{testimonial.text}”</blockquote>
+              <figcaption className="mt-4 text-sm font-semibold">{testimonial.name}</figcaption>
+            </figure>
+          ))}
+        </div>
       </section>
     </main>
   );

@@ -29,7 +29,23 @@ export function EventsGrid({
     refetch,
   } = useQuery({
     queryKey: ["events", queryKey, filter],
-    queryFn: () => fetchEvents(filter),
+    queryFn: async () => {
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      try {
+        return await Promise.race([
+          fetchEvents(filter),
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(
+              () => reject(new Error("Loading events timed out. Check the database connection.")),
+              12_000,
+            );
+          }),
+        ]);
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
+    },
+    retry: false,
   });
   const shown = data.filter((e) =>
     `${e.name} ${e.event_type} ${e.description}`.toLowerCase().includes(search.toLowerCase()),
@@ -58,7 +74,13 @@ export function EventsGrid({
       ) : isError ? (
         <div className="mt-10 rounded-2xl border border-destructive/30 p-10 text-center">
           <p className="text-destructive">
-            {error instanceof Error ? error.message : "Could not load events."}
+            {error instanceof Error && /TURSO_DATABASE_URL|TURSO_AUTH_TOKEN/i.test(error.message)
+              ? "The event database isn’t configured. Add TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Vercel’s Environment Variables, then redeploy."
+              : error instanceof Error && /timed out|database connection/i.test(error.message)
+                ? "The event database didn’t respond. Check its Vercel environment variables and deployment logs, then try again."
+                : error instanceof Error
+                  ? error.message
+                  : "Could not load events."}
           </p>
           <button
             type="button"
@@ -79,7 +101,11 @@ export function EventsGrid({
           ))}
         </div>
       )}
-      <EventDetailsDialog event={open} onClose={() => setOpenId(null)} />
+      <EventDetailsDialog
+        event={open}
+        onClose={() => setOpenId(null)}
+        onChanged={() => void refetch()}
+      />
     </div>
   );
 }

@@ -16,7 +16,7 @@ npm run dev
 
 Without Turso environment variables, the app creates `data/eventify.sqlite` on first use. Set `EVENTIFY_DB_PATH` to use a different local database file. The SQLite file contains account password hashes, sessions, profiles, events, and registrations; keep it private and do not commit it.
 
-Create an account from the sign-in page. Google sign-in and email confirmation are not used.
+The sign-in and registration pages are hidden. On first visit, Eventify creates a guest profile for that browser automatically, so visitors can use the profile, create events, generate local plan options, and register for events without creating an account. Guest profiles and their data are tied to the browser's session cookie; clearing site data or switching browsers starts a separate guest profile. Supabase is not used.
 
 ## Deploy with Turso
 
