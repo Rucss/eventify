@@ -15,6 +15,14 @@ export const Route = createFileRoute("/_authenticated/my-events")({
 
 function MyEvents() {
   const { user, loading, error } = useAuth();
+  if (import.meta.env.PROD) {
+    return (
+      <p className="text-muted-foreground">
+        The live site uses the read-only <code>data/events.json</code> catalog. Update that file
+        and redeploy to change the events list.
+      </p>
+    );
+  }
   if (loading) return <p className="text-muted-foreground">Preparing your guest profile…</p>;
   if (!user) {
     return <p className="text-destructive">{error || "Your guest profile could not be loaded."}</p>;

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import catalog from "../../data/events.json";
 import { currentUser, getDatabase, requireCurrentUser } from "./local-db.server";
 import type { EventRow } from "./local-types";
 
@@ -31,6 +32,17 @@ const filterSchema = z.object({
   createdBy: z.string().uuid().optional(),
   registeredBy: z.string().uuid().optional(),
 });
+
+const catalogEventSchema = eventSchema.extend({
+  id: z.string().uuid(),
+  created_by: z.string().uuid(),
+  creator: z.object({ full_name: z.string() }).nullable(),
+  registrations: z.array(z.object({ user_id: z.string().uuid() })),
+});
+
+function isStaticCatalogMode() {
+  return process.env["NODE_ENV"] === "production" || !!process.env["VERCEL"];
+}
 
 function text(row: Record<string, unknown>, key: string): string {
   const value = row[key];
@@ -78,6 +90,22 @@ function toEvent(row: Record<string, unknown>, userId: string | null): EventRow 
 export const fetchEvents = createServerFn({ method: "GET" })
   .inputValidator((data) => filterSchema.parse(data))
   .handler(async ({ data }) => {
+    if (isStaticCatalogMode()) {
+      return z
+        .array(catalogEventSchema)
+        .parse(catalog)
+        .filter((event) => !data.createdBy || event.created_by === data.createdBy)
+        .filter(
+          (event) =>
+            !data.registeredBy ||
+            event.registrations.some((registration) => registration.user_id === data.registeredBy),
+        )
+        .sort(
+          (first, second) =>
+            new Date(first.event_time).getTime() - new Date(second.event_time).getTime(),
+        ) satisfies EventRow[];
+    }
+
     const user = await currentUser();
     if (data.registeredBy && data.registeredBy !== user?.id) {
       throw new Error("You can only view your own registrations.");
@@ -113,6 +141,9 @@ export const fetchEvents = createServerFn({ method: "GET" })
 export const createEvent = createServerFn({ method: "POST" })
   .inputValidator((data) => eventSchema.parse(data))
   .handler(async ({ data }) => {
+    if (isStaticCatalogMode()) {
+      throw new Error("Live event data is read-only. Edit data/events.json and redeploy.");
+    }
     const user = await requireCurrentUser();
     const id = randomUUID();
     await getDatabase()
@@ -143,6 +174,9 @@ export const createEvent = createServerFn({ method: "POST" })
 export const toggleRegistration = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ eventId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
+    if (isStaticCatalogMode()) {
+      throw new Error("Live event registrations are read-only in the JSON catalog.");
+    }
     const user = await requireCurrentUser();
     const db = getDatabase();
     const event = await db.prepare("SELECT created_by FROM events WHERE id = ?").get(data.eventId);
@@ -168,6 +202,9 @@ export const toggleRegistration = createServerFn({ method: "POST" })
 export const deleteEvent = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ eventId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
+    if (isStaticCatalogMode()) {
+      throw new Error("Live event data is read-only. Edit data/events.json and redeploy.");
+    }
     const user = await requireCurrentUser();
     const result = await getDatabase()
       .prepare("DELETE FROM events WHERE id = ? AND created_by = ?")

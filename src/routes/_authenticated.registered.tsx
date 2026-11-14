@@ -14,6 +14,14 @@ export const Route = createFileRoute("/_authenticated/registered")({
 
 function Registered() {
   const { user, loading, error } = useAuth();
+  if (import.meta.env.PROD) {
+    return (
+      <p className="text-muted-foreground">
+        Event registrations are not saved on the live JSON catalog. Events can be listed in{" "}
+        <code>data/events.json</code>.
+      </p>
+    );
+  }
   if (loading) return <p className="text-muted-foreground">Preparing your guest profile…</p>;
   if (!user) {
     return <p className="text-destructive">{error || "Your guest profile could not be loaded."}</p>;

@@ -13,7 +13,11 @@ export const Route = createFileRoute("/_authenticated/events")({
       title="Events"
       queryKey="all"
       filter={{}}
-      empty="No events have been published yet."
+      empty={
+        import.meta.env.PROD
+          ? "No events have been added to data/events.json yet."
+          : "No events have been published yet."
+      }
     />
   ),
 });

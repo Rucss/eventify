@@ -54,6 +54,17 @@ function Profile() {
   useEffect(() => {
     if (data) setP(data);
   }, [data]);
+  if (import.meta.env.PROD) {
+    return (
+      <div className="mx-auto max-w-2xl rounded-2xl border bg-card p-8 text-center">
+        <h1 className="text-2xl font-bold">Profiles are not enabled on the live catalog</h1>
+        <p className="mt-3 text-muted-foreground">
+          The live site reads its event list from <code>data/events.json</code> and does not save
+          visitor profile changes.
+        </p>
+      </div>
+    );
+  }
   if (authLoading) return <p className="text-muted-foreground">Preparing your guest profile…</p>;
   if (!user) {
     return (

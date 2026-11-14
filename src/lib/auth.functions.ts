@@ -32,7 +32,10 @@ const signInSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
-export const getCurrentUser = createServerFn({ method: "GET" }).handler(() => ensureGuestSession());
+export const getCurrentUser = createServerFn({ method: "GET" }).handler(() => {
+  if (process.env["NODE_ENV"] === "production" || process.env["VERCEL"]) return null;
+  return ensureGuestSession();
+});
 
 export const signUp = createServerFn({ method: "POST" })
   .inputValidator((data) => signUpSchema.parse(data))

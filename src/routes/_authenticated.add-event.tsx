@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
@@ -47,6 +47,21 @@ function AddEvent() {
   const [saving, setSaving] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) =>
     setF({ ...f, [k]: e.target.value });
+
+  if (import.meta.env.PROD) {
+    return (
+      <div className="mx-auto max-w-2xl rounded-2xl border bg-card p-8 text-center">
+        <h1 className="text-2xl font-bold">Events are managed in a file</h1>
+        <p className="mt-3 text-muted-foreground">
+          Add or update events in <code>data/events.json</code>, then deploy the updated project.
+          Event creation and plan generation are disabled on the live site.
+        </p>
+        <Button asChild className="mt-6">
+          <Link to="/events">Browse events</Link>
+        </Button>
+      </div>
+    );
+  }
 
   async function onGenerate() {
     const attendees = Number(f.attendees);
